@@ -8,6 +8,7 @@ using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 using NUnit.Framework.Internal.Commands;
 using NUnit.Framework.Internal.Execution;
+using UnityEngine.TestTools;
 using UnityEngine.TestTools.Logging;
 using UnityEngine.TestTools.TestRunner;
 
@@ -20,6 +21,7 @@ namespace UnityEngine.TestRunner.NUnitExtensions.Runner
         private readonly ITestFilter _childFilter;
         private TestCommand _setupCommand;
         private TestCommand _teardownCommand;
+        MethodInfo _unityOneTimeSetup, _unityOneTimeTearDown;
 
         public List<UnityWorkItem> Children { get; private set; }
 
@@ -66,6 +68,10 @@ namespace UnityEngine.TestRunner.NUnitExtensions.Runner
                                     //If we do not, the objects could be automatically destroyed when exiting playmode and could result in errors later on
                                     yield return null;
                                     PerformOneTimeSetUp();
+                                    if (_unityOneTimeSetup!=null)
+                                    {
+                                        yield return Reflect.InvokeMethod(_unityOneTimeSetup, Context.TestObject);
+                                    }
                                 }
 
                                 if (!CheckForCancellation())
@@ -93,6 +99,11 @@ namespace UnityEngine.TestRunner.NUnitExtensions.Runner
 
                                 if (Context.ExecutionStatus != TestExecutionStatus.AbortRequested && !m_DontRunRestoringResult)
                                 {
+                                    if (_unityOneTimeTearDown!=null)
+                                    {
+                                        yield return Reflect.InvokeMethod(_unityOneTimeTearDown, Context.TestObject);
+                                    }
+                                    
                                     PerformOneTimeTearDown();
                                 }
                             }
@@ -151,6 +162,15 @@ namespace UnityEngine.TestRunner.NUnitExtensions.Runner
 
             _setupCommand = CommandBuilder.MakeOneTimeSetUpCommand(_suite, setUpTearDownItems, actionItems);
             _teardownCommand = CommandBuilder.MakeOneTimeTearDownCommand(_suite, setUpTearDownItems, actionItems);
+
+            if (_suite.TypeInfo != null)
+            {
+                _unityOneTimeSetup = Reflect.GetMethodsWithAttribute(_suite.TypeInfo.Type, typeof(UnityOneTimeSetUpAttribute), true)
+                                            .FirstOrDefault(x => x.ReturnType == typeof(IEnumerator));
+
+                _unityOneTimeTearDown = Reflect.GetMethodsWithAttribute(_suite.TypeInfo.Type, typeof(UnityOneTimeTearDownAttribute), true)
+                                               .FirstOrDefault(x => x.ReturnType == typeof(IEnumerator));
+            }
         }
 
         private void PerformOneTimeSetUp()

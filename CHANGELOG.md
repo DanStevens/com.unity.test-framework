@@ -1,4 +1,7 @@
 # Changelog
+## [1.1.14a] - 2020-07-06
+ - Created attributes `UnityOneTimeSetUpAttribute` and `UnityOneTimeTearDownAttribute`, equivalents of NUnit's `OneTimeSetup` and OneTimeTearDown` attributes, but with support for coroutines through `IEnumerator` (Credit to [Inter-Illusion](https://forum.unity.com/threads/add-coroutine-version-of-onetimesetup.890092/#post-6055715))
+
 ## [1.1.14] - 2020-04-03
 - Added the 'assemblyNames' command line argument for filtering on the assembly level.
 - The dll and project level of the tree view should now correctly show the results when running tests in a player (case 1197026).
